@@ -28,14 +28,17 @@ from pathlib import Path
 PRACTICE_VIDEO = "video_1"
 
 
-def _patch_numpy_aliases() -> None:
-    """TrackEval còn gọi np.float / np.int (đã bỏ từ NumPy 1.24)."""
-    import numpy as np
-
-    if not hasattr(np, "float"):
-        np.float = float  # type: ignore[attr-defined]
-    if not hasattr(np, "int"):
-        np.int = int  # type: ignore[attr-defined]
+# TrackEval còn gọi np.float / np.int / np.bool (đã bỏ khỏi NumPy). TrackEval chạy ở
+# tiến trình con nên phải vá ngay trong tiến trình đó, rồi mới chạy script của TrackEval.
+NUMPY_SHIM = (
+    "import runpy, sys\n"
+    "import numpy as np\n"
+    "for _name, _type in (('float', float), ('int', int), ('bool', bool)):\n"
+    "    if not hasattr(np, _name):\n"
+    "        setattr(np, _name, _type)\n"
+    "sys.argv = sys.argv[1:]\n"
+    "runpy.run_path(sys.argv[0], run_name='__main__')\n"
+)
 
 
 def _load_eval_config(lab_data_root: Path) -> dict:
@@ -91,6 +94,32 @@ def stage(trackeval_root: Path, lab_data_root: Path, submission: Path, run_name:
     shutil.copy(submission, sub_dst / f"{PRACTICE_VIDEO}.txt")
 
 
+def trackeval_command(trackeval_root: Path, run_name: str, benchmark: str, split: str) -> list[str]:
+    """Dựng lệnh chạy TrackEval cho video luyện, đã kèm bản vá NumPy.
+
+    Args:
+        trackeval_root: Thư mục gốc bản clone TrackEval.
+        run_name: Tên lần chấm đã stage.
+        benchmark: Tên benchmark TrackEval.
+        split: Nhánh dữ liệu, thường là ``train``.
+
+    Returns:
+        Danh sách đối số cho ``subprocess.run``.
+    """
+    return [
+        sys.executable, "-c", NUMPY_SHIM,
+        str(trackeval_root / "scripts" / "run_mot_challenge.py"),
+        "--GT_FOLDER", str(trackeval_root / "data" / "gt" / "mot_challenge"),
+        "--TRACKERS_FOLDER", str(trackeval_root / "data" / "trackers" / "mot_challenge"),
+        "--BENCHMARK", benchmark,
+        "--SPLIT_TO_EVAL", split,
+        "--SEQ_INFO", PRACTICE_VIDEO,
+        "--TRACKERS_TO_EVAL", run_name,
+        "--METRICS", "HOTA", "CLEAR", "Identity",
+        "--USE_PARALLEL", "False",
+    ]
+
+
 def run_trackeval(trackeval_root: Path, run_name: str, benchmark: str, split: str) -> None:
     """Gọi script chấm của TrackEval, chỉ một video luyện.
 
@@ -103,19 +132,8 @@ def run_trackeval(trackeval_root: Path, run_name: str, benchmark: str, split: st
     Raises:
         subprocess.CalledProcessError: Khi TrackEval thoát với mã khác 0.
     """
-    cmd = [
-        sys.executable,
-        str(trackeval_root / "scripts" / "run_mot_challenge.py"),
-        "--GT_FOLDER", str(trackeval_root / "data" / "gt" / "mot_challenge"),
-        "--TRACKERS_FOLDER", str(trackeval_root / "data" / "trackers" / "mot_challenge"),
-        "--BENCHMARK", benchmark,
-        "--SPLIT_TO_EVAL", split,
-        "--SEQ_INFO", PRACTICE_VIDEO,
-        "--TRACKERS_TO_EVAL", run_name,
-        "--METRICS", "HOTA", "CLEAR", "Identity",
-        "--USE_PARALLEL", "False",
-    ]
-    print("Đang chấm video luyện:\n  " + " ".join(cmd) + "\n")
+    cmd = trackeval_command(trackeval_root, run_name, benchmark, split)
+    print("Đang chấm video luyện:\n  " + " ".join(cmd[:2] + ["<bản vá numpy>"] + cmd[3:]) + "\n")
     subprocess.run(cmd, check=True)
 
 
@@ -125,12 +143,16 @@ def main() -> None:
     Raises:
         SystemExit: Khi file nộp không phải ``video_1.txt``.
     """
-    _patch_numpy_aliases()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--trackeval-root", required=True, type=Path)
     parser.add_argument("--lab-data-root", required=True, type=Path)
     parser.add_argument("--submission", required=True, type=Path, help="File video_1.txt do run_tracking.py sinh ra")
     parser.add_argument("--run-name", required=True, help="Tên lần chấm, ví dụ nhom01_video1")
+    parser.add_argument(
+        "--benchmark",
+        help="Tên benchmark TrackEval. Chỉ cần khi gói lab_data không có video_1/eval_config.json.",
+    )
+    parser.add_argument("--split", default="train", help="Nhánh dữ liệu, dùng cùng --benchmark")
     args = parser.parse_args()
 
     if args.submission.name != f"{PRACTICE_VIDEO}.txt":
@@ -139,9 +161,12 @@ def main() -> None:
             "video_2 đến video_5 không có nhãn — hãy đánh giá bằng mắt."
         )
 
-    config = _load_eval_config(args.lab_data_root)
-    benchmark = config["benchmark"]
-    split = config.get("split", "train")
+    if args.benchmark:
+        benchmark, split = args.benchmark, args.split
+    else:
+        config = _load_eval_config(args.lab_data_root)
+        benchmark = config["benchmark"]
+        split = config.get("split", "train")
     stage(args.trackeval_root, args.lab_data_root, args.submission, args.run_name, benchmark)
     run_trackeval(args.trackeval_root, args.run_name, benchmark, split)
     print(

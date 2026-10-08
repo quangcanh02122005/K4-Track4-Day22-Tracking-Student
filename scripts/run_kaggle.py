@@ -70,6 +70,11 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=Path("/kaggle/working/runs/nop_bai"))
     parser.add_argument("--config", type=Path, default=Path("configs/nop_bai.json"))
     parser.add_argument("--device", default="cuda:0")
+    parser.add_argument(
+        "--job", choices=["submit", "score"], default="submit",
+        help="submit: chạy 5 video theo cấu hình. score: chạy và chấm video_1 cho nhiều tracker.",
+    )
+    parser.add_argument("--trackers", nargs="+", default=["bytetrack", "botsort"], help="Dùng cho --job score")
     args = parser.parse_args()
 
     install_packages()
@@ -79,6 +84,20 @@ def main() -> None:
     print("LAB_DATA =", lab_data, flush=True)
 
     scripts = Path(__file__).resolve().parent
+    if args.job == "score":
+        subprocess.run(
+            [
+                sys.executable, str(scripts / "score_video1.py"),
+                "--lab-data-root", str(lab_data),
+                "--trackers", *args.trackers,
+                "--device", args.device,
+                "--out", "/kaggle/working/runs/score",
+                "--trackeval-root", "/kaggle/working/TrackEval",
+            ],
+            check=True,
+        )
+        return
+
     subprocess.run([sys.executable, str(scripts / "check_data.py"), "--lab-data-root", str(lab_data)], check=True)
     subprocess.run(
         [
