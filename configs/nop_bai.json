@@ -1,0 +1,8 @@
+{
+  "_ghi_chu": "Cấu hình mặc định để chạy thử. Thay tracker / conf / iou sau khi nhóm đã thử và xem video.",
+  "video_1": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
+  "video_2": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
+  "video_3": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
+  "video_4": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
+  "video_5": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5}
+}

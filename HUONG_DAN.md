@@ -104,6 +104,12 @@ python scripts/run_tracking.py \
 
 Cuối bước này `runs/nop_bai/` phải có `video_1.txt` … `video_5.txt`.
 
+Có thể chạy cả năm video một lần theo cấu hình trong `configs/nop_bai.json` (sửa tracker / conf / iou cho từng video). Script chạy đủ frame và báo file nộp nào còn thiếu:
+
+```bash
+python scripts/run_all.py --lab-data-root "$LAB_DATA" --config configs/nop_bai.json --out runs/nop_bai --save-video
+```
+
 Gợi ý khi xem:
 
 - Cùng một người đang đi đều mà đổi màu ID: đổi danh tính.

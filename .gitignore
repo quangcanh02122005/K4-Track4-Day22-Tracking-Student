@@ -1,4 +1,6 @@
 lab_data/
+data_lab21/
+kaggle/output/
 runs/
 TrackEval/
 *.pt
