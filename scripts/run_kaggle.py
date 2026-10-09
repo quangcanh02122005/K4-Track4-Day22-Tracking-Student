@@ -75,7 +75,8 @@ def main() -> None:
         help="submit: chạy 5 video theo cấu hình. score: chạy và chấm video_1 cho nhiều tracker.",
     )
     parser.add_argument("--trackers", nargs="+", default=["botsort"], help="Dùng cho --job score")
-    parser.add_argument("--confs", nargs="+", default=["0.15", "0.3", "0.5"], help="Dùng cho --job score")
+    parser.add_argument("--confs", nargs="+", default=["0.3"], help="Dùng cho --job score")
+    parser.add_argument("--ious", nargs="+", default=["0.4", "0.5", "0.7"], help="Dùng cho --job score")
     args = parser.parse_args()
 
     install_packages()
@@ -92,6 +93,7 @@ def main() -> None:
                 "--lab-data-root", str(lab_data),
                 "--trackers", *args.trackers,
                 "--confs", *args.confs,
+                "--ious", *args.ious,
                 "--device", args.device,
                 "--out", "/kaggle/working/runs/score",
                 # Ngoài /kaggle/working để không bị tải về cùng output.

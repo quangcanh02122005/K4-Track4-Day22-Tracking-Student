@@ -10,16 +10,20 @@ SUMMARY = "HOTA DetA IDSW CLR_FP\n29.46 18.095 25 337\n"
 
 
 def test_summary_path_layout(tmp_path: Path) -> None:
-    path = summary_path(tmp_path, "botsort_conf15_video1")
+    path = summary_path(tmp_path, "botsort_conf15_iou50_video1")
     assert path == (
         tmp_path / "data" / "trackers" / "mot_challenge" / "lab-train"
-        / "botsort_conf15_video1" / "pedestrian_summary.txt"
+        / "botsort_conf15_iou50_video1" / "pedestrian_summary.txt"
     )
 
 
 def test_run_name_scales_conf() -> None:
-    assert run_name("botsort", 0.15) == "botsort_conf15_video1"
-    assert run_name("bytetrack", 0.5) == "bytetrack_conf50_video1"
+    assert run_name("botsort", 0.15, 0.5) == "botsort_conf15_iou50_video1"
+    assert run_name("bytetrack", 0.5, 0.7) == "bytetrack_conf50_iou70_video1"
+
+
+def test_run_name_differs_when_only_iou_changes() -> None:
+    assert run_name("botsort", 0.3, 0.4) != run_name("botsort", 0.3, 0.7)
 
 
 def test_parse_summary_reads_values() -> None:

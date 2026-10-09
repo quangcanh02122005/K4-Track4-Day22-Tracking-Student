@@ -26,17 +26,18 @@ PRACTICE_VIDEO = "video_1"
 TABLE_METRICS = ("HOTA", "DetA", "AssA", "MOTA", "IDF1", "IDSW", "CLR_FP", "CLR_Re", "IDs")
 
 
-def run_name(tracker: str, conf: float) -> str:
-    """Đặt tên lần chấm theo tracker và ngưỡng conf.
+def run_name(tracker: str, conf: float, iou: float) -> str:
+    """Đặt tên lần chấm theo tracker, ngưỡng conf và ngưỡng iou.
 
     Args:
         tracker: Tên tracker, ví dụ ``botsort``.
         conf: Ngưỡng confidence của detector.
+        iou: Ngưỡng IoU cho NMS của detector.
 
     Returns:
-        Tên dạng ``botsort_conf15_video1`` (conf nhân 100, làm tròn).
+        Tên dạng ``botsort_conf15_iou50_video1`` (conf và iou nhân 100, làm tròn).
     """
-    return f"{tracker}_conf{round(conf * 100):02d}_{PRACTICE_VIDEO.replace('_', '')}"
+    return f"{tracker}_conf{round(conf * 100):02d}_iou{round(iou * 100):02d}_{PRACTICE_VIDEO.replace('_', '')}"
 
 
 def summary_path(trackeval_root: Path, name: str) -> Path:
@@ -116,8 +117,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--lab-data-root", required=True, type=Path)
     parser.add_argument("--trackers", nargs="+", default=["botsort"])
-    parser.add_argument("--confs", nargs="+", type=float, default=[0.15, 0.3, 0.5])
-    parser.add_argument("--iou", type=float, default=0.5)
+    parser.add_argument("--confs", nargs="+", type=float, default=[0.3])
+    parser.add_argument("--ious", nargs="+", type=float, default=[0.4, 0.5, 0.7])
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--out", type=Path, default=Path("runs/score"))
     parser.add_argument("--trackeval-root", type=Path, default=Path("TrackEval"))
@@ -130,35 +131,36 @@ def main() -> None:
     rows: List[Tuple[str, Dict[str, float]]] = []
     for tracker in args.trackers:
         for conf in args.confs:
-            name = run_name(tracker, conf)
-            run_dir = args.out / name
-            print(f"\n=== {tracker} conf={conf} iou={args.iou} ===", flush=True)
-            subprocess.run(
-                [
-                    sys.executable, str(scripts / "run_tracking.py"),
-                    "--source", str(args.lab_data_root / PRACTICE_VIDEO / "img1"),
-                    "--seq-name", PRACTICE_VIDEO,
-                    "--tracker", tracker,
-                    "--conf", str(conf), "--iou", str(args.iou),
-                    "--device", args.device,
-                    "--out", str(run_dir),
-                ],
-                check=True,
-            )
-            subprocess.run(
-                [
-                    sys.executable, str(scripts / "evaluate_practice.py"),
-                    "--trackeval-root", str(args.trackeval_root),
-                    "--lab-data-root", str(args.lab_data_root),
-                    "--submission", str(run_dir / f"{PRACTICE_VIDEO}.txt"),
-                    "--run-name", name,
-                    "--benchmark", BENCHMARK, "--split", SPLIT,
-                ],
-                check=True,
-            )
-            text = summary_path(args.trackeval_root, name).read_text()
-            (args.out / f"{name}_summary.txt").write_text(text)
-            rows.append((f"{tracker} conf={conf:g}", parse_summary(text)))
+            for iou in args.ious:
+                name = run_name(tracker, conf, iou)
+                run_dir = args.out / name
+                print(f"\n=== {tracker} conf={conf} iou={iou} ===", flush=True)
+                subprocess.run(
+                    [
+                        sys.executable, str(scripts / "run_tracking.py"),
+                        "--source", str(args.lab_data_root / PRACTICE_VIDEO / "img1"),
+                        "--seq-name", PRACTICE_VIDEO,
+                        "--tracker", tracker,
+                        "--conf", str(conf), "--iou", str(iou),
+                        "--device", args.device,
+                        "--out", str(run_dir),
+                    ],
+                    check=True,
+                )
+                subprocess.run(
+                    [
+                        sys.executable, str(scripts / "evaluate_practice.py"),
+                        "--trackeval-root", str(args.trackeval_root),
+                        "--lab-data-root", str(args.lab_data_root),
+                        "--submission", str(run_dir / f"{PRACTICE_VIDEO}.txt"),
+                        "--run-name", name,
+                        "--benchmark", BENCHMARK, "--split", SPLIT,
+                    ],
+                    check=True,
+                )
+                text = summary_path(args.trackeval_root, name).read_text()
+                (args.out / f"{name}_summary.txt").write_text(text)
+                rows.append((f"{tracker} conf={conf:g} iou={iou:g}", parse_summary(text)))
 
     table = format_table(rows)
     (args.out / "sweep_summary.txt").write_text(table + "\n", encoding="utf-8")
