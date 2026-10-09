@@ -1,8 +1,8 @@
 {
-  "_ghi_chu": "video_1: botsort 0.3/0.5 chọn sau khi quét conf và iou có chấm điểm. video_2 đến video_5: còn là mặc định chưa xem video, thay sau khi nhóm đã thử và xem video.",
+  "_ghi_chu": "Nhóm chọn botsort 0.3/0.5 cho cả 5 video. video_1: chọn sau khi quét conf và iou có chấm điểm. video_2 đến video_5: nhóm chọn botsort, chưa có nhãn nên chưa so được bằng điểm số.",
   "video_1": {"tracker": "botsort", "conf": 0.3, "iou": 0.5},
-  "video_2": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
-  "video_3": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
-  "video_4": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5},
-  "video_5": {"tracker": "bytetrack", "conf": 0.3, "iou": 0.5}
+  "video_2": {"tracker": "botsort", "conf": 0.3, "iou": 0.5},
+  "video_3": {"tracker": "botsort", "conf": 0.3, "iou": 0.5},
+  "video_4": {"tracker": "botsort", "conf": 0.3, "iou": 0.5},
+  "video_5": {"tracker": "botsort", "conf": 0.3, "iou": 0.5}
 }
