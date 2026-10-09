@@ -71,8 +71,11 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("configs/nop_bai.json"))
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument(
-        "--job", choices=["submit", "score"], default="submit",
-        help="submit: chạy 5 video theo cấu hình. score: chạy và chấm video_1 cho nhiều tracker.",
+        "--job", choices=["submit", "score", "compare"], default="submit",
+        help=(
+            "submit: chạy 5 video theo cấu hình. score: chạy và chấm video_1 cho nhiều tracker. "
+            "compare: chạy botsort cho video_2..video_5 kèm video xem thử để so sánh bằng mắt."
+        ),
     )
     parser.add_argument("--trackers", nargs="+", default=["botsort"], help="Dùng cho --job score")
     parser.add_argument("--confs", nargs="+", default=["0.3"], help="Dùng cho --job score")
@@ -98,6 +101,21 @@ def main() -> None:
                 "--out", "/kaggle/working/runs/score",
                 # Ngoài /kaggle/working để không bị tải về cùng output.
                 "--trackeval-root", "/tmp/TrackEval",
+            ],
+            check=True,
+        )
+        return
+
+    if args.job == "compare":
+        subprocess.run(
+            [
+                sys.executable, str(scripts / "run_all.py"),
+                "--lab-data-root", str(lab_data),
+                "--config", "configs/botsort_so_sanh.json",
+                "--out", "/kaggle/working/runs/botsort_cmp",
+                "--only", "video_2", "video_3", "video_4", "video_5",
+                "--device", args.device,
+                "--save-video",
             ],
             check=True,
         )

@@ -60,3 +60,9 @@ def test_load_config_threshold_out_of_range(tmp_path: Path) -> None:
 def test_load_config_missing_file(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         load_config(tmp_path / "khong_co.json")
+
+
+def test_only_selected_videos_are_checked(tmp_path: Path) -> None:
+    (tmp_path / "video_2.txt").write_text("1,1,0,0,10,10,1,-1,-1,-1\n")
+    assert missing_submission_files(tmp_path, ["video_2"]) == []
+    assert missing_submission_files(tmp_path, ["video_2", "video_3"]) == ["video_3.txt"]

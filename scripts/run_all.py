@@ -59,17 +59,18 @@ def load_config(config_path: Path, valid_trackers: Optional[Sequence[str]] = Non
     return config
 
 
-def missing_submission_files(out_dir: Path) -> List[str]:
+def missing_submission_files(out_dir: Path, videos: Sequence[str] = VIDEOS) -> List[str]:
     """Liệt kê file nộp còn thiếu hoặc rỗng.
 
     Args:
         out_dir: Thư mục kết quả, thường là ``runs/nop_bai``.
+        videos: Các video cần có file. Mặc định là cả năm video.
 
     Returns:
         Danh sách tên file (``video_N.txt``) không tồn tại hoặc rỗng. Rỗng nghĩa là đủ.
     """
     missing = []
-    for name in VIDEOS:
+    for name in videos:
         path = out_dir / f"{name}.txt"
         if not path.exists() or path.stat().st_size == 0:
             missing.append(path.name)
@@ -112,10 +113,11 @@ def main() -> None:
             max_frames=0,
         ))
 
-    missing = missing_submission_files(args.out)
+    selected = args.only or VIDEOS
+    missing = missing_submission_files(args.out, selected)
     if missing:
         raise SystemExit(f"Còn thiếu file nộp trong {args.out}: {', '.join(missing)}")
-    print(f"\nĐủ 5 file nộp trong {args.out}.")
+    print(f"\nĐủ {len(selected)} file kết quả trong {args.out}.")
 
 
 if __name__ == "__main__":
