@@ -74,7 +74,8 @@ def main() -> None:
         "--job", choices=["submit", "score"], default="submit",
         help="submit: chạy 5 video theo cấu hình. score: chạy và chấm video_1 cho nhiều tracker.",
     )
-    parser.add_argument("--trackers", nargs="+", default=["bytetrack", "botsort"], help="Dùng cho --job score")
+    parser.add_argument("--trackers", nargs="+", default=["botsort"], help="Dùng cho --job score")
+    parser.add_argument("--confs", nargs="+", default=["0.15", "0.3", "0.5"], help="Dùng cho --job score")
     args = parser.parse_args()
 
     install_packages()
@@ -90,9 +91,11 @@ def main() -> None:
                 sys.executable, str(scripts / "score_video1.py"),
                 "--lab-data-root", str(lab_data),
                 "--trackers", *args.trackers,
+                "--confs", *args.confs,
                 "--device", args.device,
                 "--out", "/kaggle/working/runs/score",
-                "--trackeval-root", "/kaggle/working/TrackEval",
+                # Ngoài /kaggle/working để không bị tải về cùng output.
+                "--trackeval-root", "/tmp/TrackEval",
             ],
             check=True,
         )
